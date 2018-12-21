@@ -176,6 +176,26 @@ describe('Scope', function() {
 
     });
 
+    it('compares based on value if enabled', function() {
+      scope.aValue = [1, 2, 3];
+      scope.counter = 0;
+
+      scope.$watch(
+        function(scope) { return scope.aValue; },
+        function(newValue, oldValue, scope) {
+          scope.counter++;
+        },
+        true
+      );
+
+      scope.$digest();
+      expect(scope.counter).toBe(1);
+
+      scope.aValue.push(4);
+      scope.$digest();
+      expect(scope.counter).toBe(2);
+    });
+
     it('does not end digest so that new watches are not run', function() {
 
       scope.aValue = 'abc';
@@ -195,26 +215,6 @@ describe('Scope', function() {
 
       scope.$digest();
       expect(scope.counter).toBe(1);
-    });
-
-    it('compares based on value if enabled', function() {
-      scope.aValue = [1, 2, 3];
-      scope.counter = 0;
-
-      scope.$watch(
-        function(scope) { return scope.aValue; },
-        function(newValue, oldValue, scope) {
-          scope.counter++;
-        },
-        true
-      );
-
-      scope.$digest();
-      expect(scope.counter).toBe(1);
-
-      scope.aValue.push(4);
-      scope.$digest();
-      expect(scope.counter).toBe(2);
     });
 
     it('correctly handles NaNs', function() {
