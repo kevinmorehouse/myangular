@@ -31,7 +31,7 @@ describe('Scope', function() {
     });
 
     it('calls the watch function with the scope as the argument', function() {
-      var watchFn    = jasmine.createSpy();
+      var watchFn = jasmine.createSpy();
       var listenerFn = function() { };
       scope.$watch(watchFn, listenerFn);
 
@@ -126,7 +126,6 @@ describe('Scope', function() {
       scope.name = 'Bob';
       scope.$digest();
       expect(scope.initial).toBe('B.');
-
     });
 
     it('gives up on the watches after 10 iterations', function() {
@@ -147,8 +146,7 @@ describe('Scope', function() {
         }
       );
 
-      expect((function() { scope.$digest(); })).toThrow();
-
+      expect(function() { scope.$digest(); }).toThrow();
     });
 
     it('ends the digest when the last watch is clean', function() {
@@ -173,7 +171,6 @@ describe('Scope', function() {
       scope.array[0] = 420;
       scope.$digest();
       expect(watchExecutions).toBe(301);
-
     });
 
     it('compares based on value if enabled', function() {
@@ -404,10 +401,10 @@ describe('Scope', function() {
       expect(scope.phaseInListenerFunction).toBe('$digest');
       expect(scope.phaseInApplyFunction).toBe('$apply');
     });
-  });
+
 });
 
-describe('eval', function() {
+describe('$eval', function() {
 
   var scope;
 
@@ -434,6 +431,7 @@ describe('eval', function() {
 
     expect(result).toBe(44);
   });
+
 });
 
 describe('$apply', function() {
@@ -465,6 +463,7 @@ describe('$apply', function() {
     });
     expect(scope.counter).toBe(2);
   });
+
 });
 
 describe('$evalAsync', function() {
@@ -475,7 +474,7 @@ describe('$evalAsync', function() {
     scope = new Scope();
   });
 
-  it('executes a given function later in the same cycle', function() {
+  it('executes given function later in the same cycle', function() {
     scope.aValue = [1, 2, 3];
     scope.asyncEvaluated = false;
     scope.asyncEvaluatedImmediately = false;
@@ -516,7 +515,7 @@ describe('$evalAsync', function() {
     expect(scope.asyncEvaluated).toBe(true);
   });
 
-  it ('executes $evalAsynced functions even when not dirty', function() {
+  it('executes $evalAsynced functions even when not dirty', function() {
     scope.aValue = [1, 2, 3];
     scope.asyncEvaluatedTimes = 0;
 
@@ -562,10 +561,9 @@ describe('$evalAsync', function() {
       }
     );
 
-    scope.$evalAsync(function(scope) {
-    });
-
+    scope.$evalAsync(function(scope) { });
     expect(scope.counter).toBe(0);
+
     setTimeout(function() {
       expect(scope.counter).toBe(1);
       done();
@@ -590,9 +588,9 @@ describe('$evalAsync', function() {
     setTimeout(function() {
       expect(scope.counter).toBe(1);
       done();
-    },50);
-
+    }, 50);
   });
+
 });
 
 describe('$applyAsync', function() {
@@ -678,6 +676,7 @@ describe('$applyAsync', function() {
     scope.$watch(
       function(scope) {
         scope.counter++;
+        return scope.aValue;
       },
       function(newValue, oldValue, scope) { }
     );
@@ -691,7 +690,7 @@ describe('$applyAsync', function() {
 
     scope.$digest();
     expect(scope.counter).toBe(2);
-    expect(scope.aValue).toBe('def');
+    expect(scope.aValue).toEqual('def');
 
     setTimeout(function() {
       expect(scope.counter).toBe(2);
@@ -715,6 +714,7 @@ describe('$applyAsync', function() {
       done();
     }, 50);
   });
+
 });
 
 describe('$postDigest', function() {
@@ -747,9 +747,7 @@ describe('$postDigest', function() {
       scope.aValue = 'changed value';
     });
     scope.$watch(
-      function(scope) {
-        return scope.aValue;
-      },
+      function(scope) { return scope.aValue; },
       function(newValue, oldValue, scope) {
         scope.watchedValue = newValue;
       }
@@ -760,7 +758,6 @@ describe('$postDigest', function() {
 
     scope.$digest();
     expect(scope.watchedValue).toBe('changed value');
-    
   });
 
   it('catches exceptions in $$postDigest', function() {
@@ -774,8 +771,11 @@ describe('$postDigest', function() {
     });
 
     scope.$digest();
+
     expect(didRun).toBe(true);
   });
+
+});
 
   describe('$watchGroup', function() {
 
@@ -803,7 +803,7 @@ describe('$postDigest', function() {
       expect(gotOldValues).toEqual([1, 2]);
     });
   
-    it('only calls listeners once per digest', function() {
+    it('only calls listener once per digest', function() {
       var counter = 0;
 
       scope.aValue = 1;
@@ -894,6 +894,7 @@ describe('$postDigest', function() {
       expect(counter).toEqual(1);
     });
 
+
     it('does not call the zero-watch listener when deregistered first', function() {
       var counter = 0;
 
@@ -905,5 +906,7 @@ describe('$postDigest', function() {
 
       expect(counter).toEqual(0);
     });
+
   });
+
 });

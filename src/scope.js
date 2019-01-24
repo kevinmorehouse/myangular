@@ -14,6 +14,17 @@ function Scope() {
   this.$$phase = null;
 }
 
+Scope.prototype.$beginPhase = function(phase) {
+  if (this.$$phase) {
+    throw this.$$phase + ' already in progress.';
+  }
+  this.$$phase = phase;
+};
+
+Scope.prototype.$clearPhase = function() {
+  this.$$phase = null;
+};
+
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   var self = this;
   var watcher = {
@@ -30,6 +41,53 @@ Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
       self.$$watchers.splice(index, 1);
       self.$$lastDirtyWatch = null;
     }
+  };
+};
+
+Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
+  var self = this;
+  var newValues = new Array(watchFns.length);
+  var oldValues = new Array(watchFns.length);
+  var changeReactionScheduled = false;
+  var firstRun = true;
+
+  if (watchFns.length === 0) {
+    var shouldCall = true;
+    self.$evalAsync(function() {
+      if (shouldCall) {
+        listenerFn(newValues, newValues, self);
+      }
+    });
+    return function() {
+      shouldCall = false;
+    };
+  }
+
+  function watchGroupListener() {
+    if (firstRun) {
+      firstRun = false;
+      listenerFn(newValues, newValues, self);
+    } else {
+      listenerFn(newValues, oldValues, self);
+    }
+    changeReactionScheduled = false;
+  }
+
+  var destroyFunctions = _.map(watchFns, function(watchFn, i) {
+    return self.$watch(watchFn, function(newValue, oldValue) {
+      newValues[i] = newValue;
+      oldValues[i] = oldValue;
+      if (!changeReactionScheduled) {
+        changeReactionScheduled = true;
+        self.$evalAsync(watchGroupListener);
+      }
+    });
+  });
+
+  return function() {
+    _.forEach(destroyFunctions, function(destroyFunction) {
+      destroyFunction();
+    });
   };
 };
 
@@ -80,9 +138,7 @@ Scope.prototype.$$digestOnce = function() {
         if (!self.$$areEqual(newValue, oldValue, watcher.valueEq)) {
           self.$$lastDirtyWatch = watcher;
           watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
-          watcher.listenerFn(newValue,
-            (oldValue === initWatchVal ? newValue : oldValue),
-            self);
+          watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), self);
             dirty = true;
         } else if (self.$$lastDirtyWatch === watcher) {
           return false;
@@ -128,7 +184,7 @@ Scope.prototype.$evalAsync = function(expr) {
       }
     }, 0);
   }
-  this.$$asyncQueue.push({scope:this, expression: expr});
+  this.$$asyncQueue.push({scope: this, expression: expr});
 };
 
 Scope.prototype.$applyAsync = function(expr) {
@@ -154,66 +210,8 @@ Scope.prototype.$$flushApplyAsync = function() {
   this.$$applyAsyncId = null;
 };
 
-Scope.prototype.$beginPhase = function(phase) {
-  if (this.$$phase) {
-    throw this.$$phase + 'already in progress';
-  }
-  this.$$phase = phase;
-};
-
-Scope.prototype.$clearPhase = function() {
-  this.$$phase = null;
-};
-
 Scope.prototype.$$postDigest = function(fn) {
   this.$$postDigestQueue.push(fn);
-};
-
-Scope.prototype.$watchGroup = function(watchFns, listenerFn) {
-  var self = this;
-  var newValues = new Array(watchFns.length);
-  var oldValues = new Array(watchFns.length);
-  var changeReactionScheduled = false;
-  var firstRun = true;
-
-  if (watchFns.length === 0) {
-    var shouldCall = true;
-    self.$evalAsync(function() {
-      if (shouldCall) {
-        listenerFn(newValues, newValues, self);
-      }
-    });
-    return function() {
-      shouldCall = false;
-    };
-  }
-
-  function watchGroupListener() {
-    if (firstRun) {
-      firstRun = false;
-      listenerFn(newValues, newValues, self);
-    } else {
-      listenerFn(newValues, oldValues, self);
-    }
-    changeReactionScheduled = false;
-  }
-
-  var destroyFunctions = _.map(watchFns, function(watchFn, i) {
-    return self.$watch(watchFn, function(newValue, oldValue) {
-      newValues[i] = newValue;
-      oldValues[i] = oldValue;
-      if (!changeReactionScheduled) {
-        changeReactionScheduled = true;
-        self.$evalAsync(watchGroupListener);
-      }
-    });
-  });
-
-  return function() {
-    _.forEach(destroyFunctions, function(destroyFunction) {
-      destroyFunction();
-    });
-  };
 };
 
 module.exports = Scope;
