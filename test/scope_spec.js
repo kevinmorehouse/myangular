@@ -1185,7 +1185,7 @@ describe('Scope', function() {
         }
       );
 
-      child.$evalAsync(function(scope) { });
+      child2.$evalAsync(function(scope) { });
 
       setTimeout(function() {
         expect(parent.counter).toBe(1);

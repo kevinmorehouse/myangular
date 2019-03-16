@@ -27,6 +27,27 @@ Scope.prototype.$clearPhase = function() {
   this.$$phase = null;
 };
 
+Scope.prototype.$new = function(isolated, parent) {
+  var child;
+  parent = parent || this;
+  if (isolated) {
+    child = new Scope();
+    child.$root = parent.$root;
+    child.$$asyncQueue = parent.$$asyncQueue;
+    child.$$postDigestQueue = parent.$$postDigestQueue;
+    child.$$applyAsyncQueue = parent.$$applyAsyncQueue;
+  } else {
+    var ChildScope = function() { };
+    ChildScope.prototype = this;
+    child = new ChildScope();
+  }
+  parent.$$children.push(child);
+  child.$$watchers = [];
+  child.$$children = [];
+  child.$parent = parent;
+  return child;
+};
+
 Scope.prototype.$watch = function(watchFn, listenerFn, valueEq) {
   var self = this;
   var watcher = {
@@ -133,7 +154,6 @@ Scope.prototype.$digest = function() {
 Scope.prototype.$$digestOnce = function() {
   var dirty;
   var continueLoop = true;
-  var self = this;
   this.$$everyScope(function(scope) {
     var newValue, oldValue;
     _.forEachRight(scope.$$watchers, function(watcher) {
@@ -142,11 +162,11 @@ Scope.prototype.$$digestOnce = function() {
           newValue = watcher.watchFn(scope);
           oldValue = watcher.last;
           if (!scope.$$areEqual(newValue, oldValue, watcher.valueEq)) {
-            self.$root.$$lastDirtyWatch = watcher;
+            scope.$root.$$lastDirtyWatch = watcher;
             watcher.last = (watcher.valueEq ? _.cloneDeep(newValue) : newValue);
             watcher.listenerFn(newValue, (oldValue === initWatchVal ? newValue : oldValue), scope);
               dirty = true;
-          } else if (self.$root.$$lastDirtyWatch === watcher) {
+          } else if (scope.$root.$$lastDirtyWatch === watcher) {
             continueLoop = false;
             return false;
           }
@@ -167,6 +187,16 @@ Scope.prototype.$$areEqual = function(newValue, oldValue, valueEq) {
     return newValue === oldValue ||
     (typeof newValue === 'number' && typeof oldValue === 'number' &&
     isNaN(newValue) && isNaN(oldValue));
+  }
+};
+
+Scope.prototype.$$everyScope = function(fn) {
+  if (fn(this)) {
+    return this.$$children.every(function(child) {
+      return child.$$everyScope(fn);
+    });
+  } else {
+    return false;
   }
 };
 
@@ -221,37 +251,6 @@ Scope.prototype.$$flushApplyAsync = function() {
 
 Scope.prototype.$$postDigest = function(fn) {
   this.$$postDigestQueue.push(fn);
-};
-
-Scope.prototype.$new = function(isolated, parent) {
-  var child;
-  parent = parent || this;
-  if (isolated) {
-    child = new Scope();
-    child.$root = parent.$root;
-    child.$$asyncQueue = parent.$$asyncQueue;
-    child.$$postDigestQueue = parent.$$postDigestQueue;
-    child.$$applyAsyncQueue = parent.$$applyAsyncQueue;
-  } else {
-    var ChildScope = function() { };
-    ChildScope.prototype = this;
-    child = new ChildScope();
-  }
-  parent.$$children.push(child);
-  child.$$watchers = [];
-  child.$$children = [];
-  child.$parent = parent;
-  return child;
-};
-
-Scope.prototype.$$everyScope = function(fn) {
-  if (fn(this)) {
-    return this.$$children.every(function(child) {
-      return child.$$everyScope(fn);
-    });
-  } else {
-    return false;
-  }
 };
 
 Scope.prototype.$destroy = function() {
