@@ -99,7 +99,7 @@ describe('parse', function() {
   });
 
   it('ignores whitespace', function() {
-    var fn = parse(' \n42');
+    var fn = parse(' \n42 ');
     expect(fn()).toEqual(42);
   });
 
@@ -114,7 +114,7 @@ describe('parse', function() {
   });
 
   it('will parse an array with trailing commas', function() {
-    var fn = parse('[1, 2, 3,]');
+    var fn = parse('[1, 2, 3, ]');
     expect(fn()).toEqual([1, 2, 3]);
   });
 
