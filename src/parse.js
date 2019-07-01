@@ -218,6 +218,16 @@ AST.prototype.ast = function(text) {
 AST.prototype.program = function() {
   return {type: AST.Program, body: this.assignment()};
 };
+
+AST.prototype.assignment = function() {
+  var left = this.primary();
+  if (this.expect('=')) {
+    var right = this.primary();
+    return {type: AST.AssignmentExpression, left: left, right: right};
+  }
+  return left;
+};
+
 AST.prototype.primary = function() {
   var primary; 
   if (this.expect('[')) {
@@ -295,6 +305,16 @@ AST.prototype.object = function() {
   return {type: AST.ObjectExpression, properties: properties};
 };
 
+AST.prototype.parseArguments = function() {
+  var args = [];
+  if (!this.peek(')')) {
+    do {
+      args.push(this.assignment());
+    } while (this.expect(','));
+  }
+  return args;
+};
+
 AST.prototype.identifier = function() {
   return {type: AST.Identifier, name: this.consume().text};
 };
@@ -326,25 +346,6 @@ AST.prototype.consume = function(e) {
     throw 'Unexpected. Expecting: ' + e;
   }
   return token;
-};
-
-AST.prototype.parseArguments = function() {
-  var args = [];
-  if (!this.peek(')')) {
-    do {
-      args.push(this.assignment());
-    } while (this.expect(','));
-  }
-  return args;
-};
-
-AST.prototype.assignment = function() {
-  var left = this.primary();
-  if (this.expect('=')) {
-    var right = this.primary();
-    return {type: AST.AssignmentExpression, left: left, right: right};
-  }
-  return left;
 };
 
 AST.prototype.constants = {
@@ -426,6 +427,8 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
       return intoId;
     case AST.ThisExpression:
       return 's';
+    case AST.LocalsExpression:
+      return 'l';
     case AST.MemberExpression:
       intoId = this.nextId();
       var left = this.recurse(ast.object, undefined, create);
@@ -461,8 +464,6 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
         }
       }
       return intoId;
-    case AST.LocalsExpression:
-      return 'l';
     case AST.CallExpression:
       var callContext = {};
       var callee = this.recurse(ast.callee, callContext);
@@ -493,40 +494,6 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
   }
 };
 
-ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-Z0-9]/g;
-
-ASTCompiler.prototype.stringEscapeFn = function(c) {
-  return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
-};
-
-ASTCompiler.prototype.escape = function(value) {
-  if (_.isString(value)) {
-    return '\'' +
-    value.replace(this.stringEscapeRegex, this.stringEscapeFn) + 
-    '\'';
-  } else if (_.isNull(value)) {
-    return 'null';
-  } else {
-    return value;
-  }
-};
-
-ASTCompiler.prototype.nonComputedMember = function(left, right) {
-  return '(' + left + ').' + right;
-};
-
-ASTCompiler.prototype.computedMember = function(left, right) {
-  return '(' + left + ')[' + right + ']';
-};
-
-ASTCompiler.prototype.if_ = function(test, consequent) {
-  this.state.body.push('if(', test, '){', consequent, '}');
-};
-
-ASTCompiler.prototype.assign = function(id, value) {
-  return id + '=' + value + ';';
-};
-
 ASTCompiler.prototype.nextId = function() {
   var id = 'v' + (this.state.nextId++);
   this.state.vars.push(id);
@@ -537,8 +504,24 @@ ASTCompiler.prototype.not = function(e) {
   return '!(' + e + ')';
 };
 
+ASTCompiler.prototype.nonComputedMember = function(left, right) {
+  return '(' + left + ').' + right;
+};
+
+ASTCompiler.prototype.computedMember = function(left, right) {
+  return '(' + left + ')[' + right + ']';
+};
+
 ASTCompiler.prototype.getHasOwnProperty = function(object, property) {
-  return object + '&&(' + this.escape(property) + ' in ' + object + ')'; 
+  return object + '&&(' + this.escape(property) + ' in ' + object + ')';
+};
+
+ASTCompiler.prototype.if_ = function(test, consequent) {
+  this.state.body.push('if(', test, '){', consequent, '}');
+};
+
+ASTCompiler.prototype.assign = function(id, value) {
+  return id + '=' + value + ';';
 };
 
 ASTCompiler.prototype.addEnsureSafeMemberName = function(expr) {
@@ -551,6 +534,24 @@ ASTCompiler.prototype.addEnsureSafeObject = function(expr) {
 
 ASTCompiler.prototype.addEnsureSafeFunction = function(expr) {
   this.state.body.push('ensureSafeFunction(' + expr + ');');
+};
+
+ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-Z0-9]/g;
+
+ASTCompiler.prototype.stringEscapeFn = function(c) {
+  return '\\u' + ('0000' + c.charCodeAt(0).toString(16)).slice(-4);
+};
+
+ASTCompiler.prototype.escape = function(value) {
+  if (_.isString(value)) {
+    return '\'' +
+    value.replace(this.stringEscapeRegex, this.stringEscapeFn) +
+    '\'';
+  } else if (_.isNull(value)) {
+    return 'null';
+  } else {
+    return value;
+  }
 };
 
 function Parser(lexer) {

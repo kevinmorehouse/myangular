@@ -156,7 +156,7 @@ describe('parse', function() {
     var fn = parse('aKey.anotherKey');
     expect(fn({aKey: {anotherKey: 42}})).toBe(42);
     expect(fn({aKey: {}})).toBeUndefined();
-    expect(fn()).toBeUndefined();
+    expect(fn({})).toBeUndefined();
   });
 
   it('looks up a member from an object', function() {
@@ -238,7 +238,7 @@ describe('parse', function() {
 
   it('parses a function call with a single identifier argument', function() {
     var fn = parse('aFunction(n)');
-    expect(fn({n: 42, aFunction: function(arg) { return arg;} })).toBe(42);
+    expect(fn({n: 42, aFunction: function(arg) { return arg; }})).toBe(42);
   });
 
   it('parses a function call with a single function call argument', function() {
@@ -389,12 +389,12 @@ describe('parse', function() {
     }).toThrow();
   });
 
-  it('does not allow accessing window as a computed property', function() {
+  it('does not allow accessing window as computed property', function() {
     var fn = parse('anObject["wnd"]');
     expect(function() { fn({anObject: {wnd: window}}); }).toThrow();
   });
 
-  it('does not allow accessing window as a non-computed property', function() {
+  it('does not allow accessing window as non-computed property', function() {
     var fn = parse('anObject.wnd');
     expect(function() { fn({anObject: {wnd: window}}); }).toThrow();
   });
@@ -433,7 +433,7 @@ describe('parse', function() {
   });
 
   it('does not allow calling functions on DOM elements', function() {
-    var fn = parse('el.setAttribute("evil", true)');
+    var fn = parse('el.setAttribute("evil", "true")');
     expect(function() { fn({el: document.documentElement}); }).toThrow();
   });
 
@@ -460,6 +460,5 @@ describe('parse', function() {
     var fn = parse('fun.apply(obj)');
     expect(function() { fn({fun: function() { }, obj: {}}); }).toThrow();
   });
-
 
 });
