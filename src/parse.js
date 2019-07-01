@@ -4,6 +4,10 @@ var _ = require('lodash');
 
 var ESCAPES = {'n':'\n', 'f':'\f', 'r':'\r', 't':'\t', 'v':'\v', '\'':'\'', '"':'"'};
 
+var CALL = Function.prototype.call;
+var APPLY = Function.prototype.apply;
+var BIND = Function.prototype.bind;
+
 function ensureSafeMemberName(name) {
   if (name === 'constructor' || name === '__proto__' ||
       name === '__defineGetter__' || name === '__defineSetter__' ||
@@ -23,6 +27,18 @@ function ensureSafeObject(obj) {
       throw 'Referencing Function in Angular expressions is disallowed!';
     } else if (obj === Object) {
       throw 'Referencing Object in Angular expressions is disallowed!';
+    }
+  }
+  return obj;
+}
+
+function ensureSafeFunction(obj) {
+  if (obj) {
+    if (obj.constructor === obj) {
+      throw 'Referencing Function in Angular expressions is disallowed!';
+    } else if (obj === CALL || obj === APPLY || obj === BIND) {
+      throw 'Referencing call, apply, or bind in Angular expressions ' +
+        'is disallowed!';
     }
   }
   return obj;
@@ -358,9 +374,11 @@ ASTCompiler.prototype.compile = function(text) {
   return new Function(
     'ensureSafeMemberName',
     'ensureSafeObject',
+    'ensureSafeFunction',
     fnString)(
       ensureSafeMemberName,
-      ensureSafeObject);
+      ensureSafeObject,
+      ensureSafeFunction);
   /* jshint +W054 */
 };
 
@@ -459,6 +477,7 @@ ASTCompiler.prototype.recurse = function(ast, context, create) {
           callee = this.nonComputedMember(callContext.context, callContext.name);
         }
       }
+      this.addEnsureSafeFunction(callee);
       return callee + '&&ensureSafeObject(' + callee + '(' + args.join(',') + '))';
     case AST.AssignmentExpression:
       var leftContext = {};
@@ -528,6 +547,10 @@ ASTCompiler.prototype.addEnsureSafeMemberName = function(expr) {
 
 ASTCompiler.prototype.addEnsureSafeObject = function(expr) {
   this.state.body.push('ensureSafeObject(' + expr + ');');
+};
+
+ASTCompiler.prototype.addEnsureSafeFunction = function(expr) {
+  this.state.body.push('ensureSafeFunction(' + expr + ');');
 };
 
 function Parser(lexer) {
