@@ -272,8 +272,11 @@ AST.prototype.assignment = function() {
 };
 
 AST.prototype.primary = function() {
-  var primary; 
-  if (this.expect('[')) {
+  var primary;
+  if (this.expect('(')) {
+    primary = this.assignment();
+    this.consume(')');
+  } else if (this.expect('[')) {
     primary = this.arrayDeclaration();
   } else if (this.expect('{')) {
     primary = this.object();
