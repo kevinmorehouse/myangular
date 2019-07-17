@@ -466,7 +466,7 @@ describe('parse', function() {
     expect(parse('+a')({a: 42})).toBe(42);
   });
 
-  it('replaces undefined with zero for unary + ', function() {
+  it('replaces undefined with zero for unary +', function() {
     expect(parse('+a')({})).toBe(0);
   });
 
@@ -623,7 +623,7 @@ describe('parse', function() {
   it('parses parentheses altering precedence order', function() {
     expect(parse('21 * (3 - 1)')()).toBe(42);
     expect(parse('false && (true || true)')()).toBe(false);
-    expect(parse('-((a % 2) === 0 ? 1 : 2)')({a : 42})).toBe(-1);
+    expect(parse('-((a % 2) === 0 ? 1 : 2)')({a: 42})).toBe(-1);
   });
 
   it('parses several statements', function() {

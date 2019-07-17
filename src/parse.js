@@ -4,14 +4,10 @@ var _ = require('lodash');
 
 var ESCAPES = {'n':'\n', 'f':'\f', 'r':'\r', 't':'\t', 'v':'\v', '\'':'\'', '"':'"'};
 
-var CALL = Function.prototype.call;
-var APPLY = Function.prototype.apply;
-var BIND = Function.prototype.bind;
-
 var OPERATORS = {
   '+': true,
-  '!': true,
   '-': true,
+  '!': true,
   '*': true,
   '/': true,
   '%': true,
@@ -27,6 +23,10 @@ var OPERATORS = {
   '&&': true,
   '||': true
 };
+
+var CALL = Function.prototype.call;
+var APPLY = Function.prototype.apply;
+var BIND = Function.prototype.bind;
 
 function ensureSafeMemberName(name) {
   if (name === 'constructor' || name === '__proto__' ||
@@ -279,6 +279,120 @@ AST.prototype.assignment = function() {
   return left;
 };
 
+AST.prototype.ternary = function() {
+  var test = this.logicalOR();
+  if (this.expect('?')) {
+    var consequent = this.assignment();
+    if (this.consume(':')) {
+      var alternate = this.assignment();
+      return {
+        type: AST.ConditionalExpression,
+        test: test,
+        consequent: consequent,
+        alternate: alternate
+      };
+    }
+  }
+  return test;
+};
+
+AST.prototype.logicalOR = function() {
+  var left = this.logicalAND();
+  var token;
+  while ((token = this.expect('||'))) {
+    left = {
+      type: AST.LogicalExpression,
+      left: left,
+      operator: token.text,
+      right: this.logicalAND()
+    };
+  }
+  return left;
+};
+
+AST.prototype.logicalAND = function() {
+  var left = this.equality();
+  var token;
+  while ((token = this.expect('&&'))) {
+    left = {
+      type: AST.LogicalExpression,
+      left: left,
+      operator: token.text,
+      right: this.equality()
+    };
+  }
+  return left;
+};
+
+AST.prototype.equality = function() {
+  var left = this.relational();
+  var token;
+  while ((token = this.expect('==', '!=', '===', '!=='))) {
+    left = {
+      type: AST.BinaryExpression,
+      left: left,
+      operator: token.text,
+      right: this.relational()
+    };
+  }
+  return left;
+};
+
+AST.prototype.relational = function() {
+  var left = this.additive();
+  var token;
+  while ((token = this.expect('<', '>', '<=', '>='))) {
+    left = {
+      type: AST.BinaryExpression,
+      left: left,
+      operator: token.text,
+      right: this.additive()
+    };
+  }
+  return left;
+};
+
+AST.prototype.additive = function() {
+  var left = this.multiplicative();
+  var token;
+  while ((token = this.expect('+')) || (token = this.expect('-'))) {
+    left = {
+      type: AST.BinaryExpression,
+      left: left,
+      operator: token.text,
+      right: this.multiplicative()
+    };
+  }
+  return left;
+};
+
+AST.prototype.multiplicative = function() {
+  var left = this.unary();
+  var token;
+  while ((token = this.expect('*', '/', '%'))) {
+    left = {
+      type: AST.BinaryExpression,
+      left: left,
+      operator: token.text,
+      right: this.unary()
+    };
+  }
+  return left;
+};
+
+AST.prototype.unary = function() {
+  var token;
+  if ((token = this.expect('+', '!', '-'))) {
+    return {
+      type: AST.UnaryExpression,
+      operator: token.text,
+      argument: this.unary()
+    };
+  } else {
+    return this.primary();
+  }
+};
+
 AST.prototype.primary = function() {
   var primary;
   if (this.expect('(')) {
@@ -336,7 +450,6 @@ AST.prototype.arrayDeclaration = function() {
   }
   this.consume(']');
   return {type: AST.ArrayExpression, elements: elements};
-
 };
 
 AST.prototype.object = function() {
@@ -352,7 +465,6 @@ AST.prototype.object = function() {
       this.consume(':');
       property.value = this.assignment();
       properties.push(property);
-
     } while (this.expect(','));
   }
   this.consume('}');
@@ -400,120 +512,6 @@ AST.prototype.consume = function(e) {
     throw 'Unexpected. Expecting: ' + e;
   }
   return token;
-};
-
-AST.prototype.unary = function() {
-  var token;
-  if ((token = this.expect('+', '!', '-'))) {
-    return {
-      type: AST.UnaryExpression,
-      operator: token.text,
-      argument: this.unary()
-    };
-  } else {
-    return this.primary();
-  }
-};
-
-AST.prototype.multiplicative = function() {
-  var left = this.unary();
-  var token;
-  while ((token = this.expect('*', '/', '%'))) {
-    left = {
-      type: AST.BinaryExpression,
-      left: left,
-      operator: token.text,
-      right: this.unary()
-    };
-  }
-  return left;
-};
-
-AST.prototype.additive = function() {
-  var left = this.multiplicative();
-  var token;
-  while ((token = this.expect('+')) || (token = this.expect('-'))) {
-    left = {
-      type: AST.BinaryExpression,
-      left: left,
-      operator: token.text,
-      right: this.multiplicative()
-    };
-  }
-  return left;
-};
-
-AST.prototype.equality = function() {
-  var left = this.relational();
-  var token;
-  while ((token = this.expect('==', '!=', '===', '!=='))) {
-    left = {
-      type: AST.BinaryExpression,
-      left: left,
-      operator: token.text,
-      right: this.relational()
-    };
-  }
-  return left;
-};
-
-AST.prototype.relational = function() {
-  var left = this.additive();
-  var token;
-  while ((token = this.expect('<', '>', '<=', '>='))) {
-    left = {
-      type: AST.BinaryExpression,
-      left: left,
-      operator: token.text,
-      right: this.additive()
-    };
-  }
-  return left;
-};
-
-AST.prototype.logicalOR = function() {
-  var left = this.logicalAND();
-  var token;
-  while ((token = this.expect('||'))) {
-    left = {
-      type: AST.LogicalExpression,
-      left: left,
-      operator: token.text,
-      right: this.logicalAND()
-    };
-  }
-  return left;
-};
-
-AST.prototype.logicalAND = function() {
-  var left = this.equality();
-  var token;
-  while ((token = this.expect('&&'))) {
-    left = {
-      type: AST.LogicalExpression,
-      left: left,
-      operator: token.text,
-      right: this.equality()
-    };
-  }
-  return left;
-};
-
-AST.prototype.ternary = function() {
-  var test = this.logicalOR();
-  if (this.expect('?')) {
-    var consequent = this.assignment();
-    if (this.consume(':')) {
-      var alternate = this.assignment();
-      return {
-        type: AST.ConditionalExpression,
-        test: test,
-        consequent: consequent,
-        alternate: alternate
-      };
-    }
-  }
-  return test;
 };
 
 AST.prototype.constants = {
@@ -738,6 +736,10 @@ ASTCompiler.prototype.addEnsureSafeFunction = function(expr) {
   this.state.body.push('ensureSafeFunction(' + expr + ');');
 };
 
+ASTCompiler.prototype.ifDefined = function(value, defaultValue) {
+  return 'ifDefined(' + value + ',' + this.escape(defaultValue) + ')';
+};
+
 ASTCompiler.prototype.stringEscapeRegex = /[^ a-zA-Z0-9]/g;
 
 ASTCompiler.prototype.stringEscapeFn = function(c) {
@@ -754,10 +756,6 @@ ASTCompiler.prototype.escape = function(value) {
   } else {
     return value;
   }
-};
-
-ASTCompiler.prototype.ifDefined = function(value, defaultValue) {
-  return 'ifDefined(' + value + ',' + this.escape(defaultValue) + ')';
 };
 
 function Parser(lexer) {
