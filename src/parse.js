@@ -274,7 +274,7 @@ AST.prototype.program = function() {
 
 AST.prototype.filter = function() {
   var left = this.assignment();
-  if (this.expect('|')) {
+  while (this.expect('|')) {
     left = {
       type: AST.CallExpression,
       callee: this.identifier(),
