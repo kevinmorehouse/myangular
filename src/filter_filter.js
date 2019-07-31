@@ -2,22 +2,39 @@
 
 var _ = require('lodash');
 
-function filterFilter() {
-  return function(array, filterExpr, comparator) {
-    var predicateFn;
-    if (_.isFunction(filterExpr)) {
-      predicateFn = filterExpr;
-    } else if (_.isString(filterExpr) ||
-              _.isNumber(filterExpr) ||
-              _.isBoolean(filterExpr) ||
-              _.isNull(filterExpr) ||
-              _.isObject(filterExpr)) {
-      predicateFn = createPredicateFn(filterExpr, comparator);
-    } else {
-      return array;
-    }
-    return _.filter(array, predicateFn);
-  };
+function deepCompare(actual, expected, comparator, matchAnyProperty, inWildcard) {
+if (_.isString(expected) && _.startsWith(expected, '!')) {
+  return !deepCompare(actual, expected.substring(1), comparator, matchAnyProperty);
+}
+if (_.isArray(actual)) {
+  return _.some(actual, function(actualItem) {
+    return deepCompare(actualItem, expected, comparator, matchAnyProperty);
+  });
+}
+
+if (_.isObject(actual)) {
+  if (_.isObject(expected) && !inWildcard) {
+    return _.every(
+      _.toPlainObject(expected),
+      function(expectedVal, expectedKey) {
+        if (_.isUndefined(expectedVal)) {
+          return true;
+        }
+        var isWildcard = (expectedKey === '$');
+        var actualVal = isWildcard ? actual : actual[expectedKey];
+        return deepCompare(actualVal, expectedVal, comparator, isWildcard, isWildcard);
+      }
+    );
+  } else if (matchAnyProperty) {
+    return _.some(actual, function(value, key) {
+      return deepCompare(value, expected, comparator, matchAnyProperty);
+    });
+  } else {
+    return comparator(actual, expected);
+  }
+} else {
+  return comparator(actual, expected);
+}
 }
 
 function createPredicateFn(expression, comparator) {
@@ -48,43 +65,22 @@ function createPredicateFn(expression, comparator) {
   };
 }
 
-function deepCompare(
-    actual, expected, comparator, matchAnyProperty, inWildcard) {
-  if (_.isString(expected) && _.startsWith(expected, '!')) {
-    return !deepCompare(actual, expected.substring(1),
-                          comparator, matchAnyProperty);
-  }
-  if (_.isArray(actual)) {
-    return _.some(actual, function(actualItem) {
-      return deepCompare(actualItem, expected,
-                          comparator, matchAnyProperty);
-    });
-  }
-  if (_.isObject(actual)) {
-    if (_.isObject(expected) && !inWildcard) {
-      return _.every(
-        _.toPlainObject(expected),
-        function(expectedVal, expectedKey) {
-          if (_.isUndefined(expectedVal)) {
-            return true;
-          }
-          var isWildcard = (expectedKey === '$');
-          var actualVal = isWildcard ? actual: actual[expectedKey];
-          return deepCompare(actualVal, expectedVal,
-                              comparator, isWildcard, isWildcard);
-        }
-      );
-    } else if (matchAnyProperty) {
-      return _.some(actual, function(value, key) {
-        return deepCompare(value, expected,
-                            comparator, matchAnyProperty);
-      });
+function filterFilter() {
+  return function(array, filterExpr, comparator) {
+    var predicateFn;
+    if (_.isFunction(filterExpr)) {
+      predicateFn = filterExpr;
+    } else if (_.isString(filterExpr) ||
+              _.isNumber(filterExpr) ||
+              _.isBoolean(filterExpr) ||
+              _.isNull(filterExpr) ||
+              _.isObject(filterExpr)) {
+      predicateFn = createPredicateFn(filterExpr, comparator);
     } else {
-      return comparator(actual, expected);
+      return array;
     }
-  } else {
-    return comparator(actual, expected);
-  }
+    return _.filter(array, predicateFn);
+  };
 }
 
 module.exports = filterFilter;

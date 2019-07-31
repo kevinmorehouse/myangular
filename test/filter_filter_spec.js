@@ -39,10 +39,22 @@ describe('filter filter', function() {
     expect(fn({arr: [
       {firstName: 'John', lastName: 'Brown'},
       {firstName: 'Jane', lastName: 'Fox'},
-      {firstName: 'Mary', lastName: 'Quick'},
+      {firstName: 'Mary', lastName: 'Quick'}
     ]})).toEqual([
       {firstName: 'John', lastName: 'Brown'},
-      {firstName: 'Jane', lastName: 'Fox'},
+      {firstName: 'Jane', lastName: 'Fox'}
+    ]);
+  });
+
+  it('filters an array of objects where a nested value matches', function() {
+    var fn = parse('arr | filter:"o"');
+    expect(fn({arr: [
+      {name: {first: 'John', last: 'Brown'}},
+      {name: {first: 'Jane', last: 'Fox'}},
+      {name: {first: 'Mary', last: 'Quick'}}
+    ]})).toEqual([
+      {name: {first: 'John', last: 'Brown'}},
+      {name: {first: 'Jane', last: 'Fox'}}
     ]);
   });
 
@@ -61,9 +73,9 @@ describe('filter filter', function() {
     expect(fn({arr: [
       {name: 'Mary', age: 42},
       {name: 'John', age: 43},
-      {name: 'Jane', age: 44},
+      {name: 'Jane', age: 44}
     ]})).toEqual([
-      {name: 'Mary', age: 42},
+      {name: 'Mary', age: 42}
     ]);
   });
 
@@ -108,7 +120,7 @@ describe('filter filter', function() {
     var fn = parse('arr | filter:{name: "o"}');
     expect(fn({arr: [
       {name: 'Joe', role: 'admin'},
-      {name: 'Jane', role: 'moderator'},
+      {name: 'Jane', role: 'moderator'}
     ]})).toEqual([
       {name: 'Joe', role: 'admin'}
     ]);
@@ -118,7 +130,7 @@ describe('filter filter', function() {
     var fn = parse('arr | filter:{name: "o", role: "m"}');
     expect(fn({arr: [
       {name: 'Joe', role: 'admin'},
-      {name: 'Jane', role: 'moderator'},
+      {name: 'Jane', role: 'moderator'}
     ]})).toEqual([
       {name: 'Joe', role: 'admin'}
     ]);
@@ -128,7 +140,7 @@ describe('filter filter', function() {
     var fn = parse('arr | filter:{}');
     expect(fn({arr: [
       {name: 'Joe', role: 'admin'},
-      {name: 'Jane', role: 'moderator'},
+      {name: 'Jane', role: 'moderator'}
     ]})).toEqual([
       {name: 'Joe', role: 'admin'},
       {name: 'Jane', role: 'moderator'}
@@ -139,7 +151,7 @@ describe('filter filter', function() {
     var fn = parse('arr | filter:{name: {first: "o"}}');
     expect(fn({arr: [
       {name: {first: 'Joe'}, role: 'admin'},
-      {name: {first: 'Jane'}, role: 'moderator'},
+      {name: {first: 'Jane'}, role: 'moderator'}
     ]})).toEqual([
       {name: {first: 'Joe'}, role: 'admin'}
     ]);
@@ -151,7 +163,7 @@ describe('filter filter', function() {
       {name: {first: 'Joe'}, role: 'admin'},
       {name: {first: 'Jane'}, role: 'moderator'}
     ]})).toEqual([
-      {name: {first: 'Jane'}, role: 'moderator'},
+      {name: {first: 'Jane'}, role: 'moderator'}
     ]);
   });
 
@@ -174,7 +186,7 @@ describe('filter filter', function() {
       {users: [{name: {first: 'Mary'}, role: 'admin'}]}
     ]})).toEqual([
       {users: [{name: {first: 'Joe'}, role: 'admin'},
-                {name: {first: 'Jane'}, role: 'moderator'}]},
+                {name: {first: 'Jane'}, role: 'moderator'}]}
     ]);
   });
 
@@ -212,7 +224,7 @@ describe('filter filter', function() {
       {name: {first: 'Mary'}, role: 'admin'}
     ]})).toEqual([
       {name: {first: 'Joe'}, role: 'admin'},
-      {name: {first: 'Jane'}, role: 'moderator'},
+      {name: {first: 'Jane'}, role: 'moderator'}
     ]);
   });
 
@@ -245,7 +257,7 @@ describe('filter filter', function() {
   });
 
   it('allows using a custom comparator', function() {
-    var fn = parse('arr | filter: {$: "o"}:myComparator');
+    var fn = parse('arr | filter:{$: "o"}:myComparator');
     expect(fn({
       arr: ['o', 'oo', 'ao', 'aa'],
       myComparator: function(left, right) {
@@ -255,7 +267,7 @@ describe('filter filter', function() {
   });
 
   it('allows using an equality comparator', function() {
-    var fn = parse('arr | filter: {name: "Jo"}:true');
+    var fn = parse('arr | filter:{name: "Jo"}:true');
     expect(fn({arr: [
       {name: 'Jo'},
       {name: 'Joe'}
@@ -263,5 +275,6 @@ describe('filter filter', function() {
       {name: 'Jo'}
     ]);
   });
+
 
 });
