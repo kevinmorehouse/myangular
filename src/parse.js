@@ -78,23 +78,6 @@ function isLiteral(ast) {
       ast.body[0].type === AST.ObjectExpression);
 }
 
-function constantWatchDelegate(scope, listenerFn, valueEq, watchFn) {
-  var unwatch = scope.$watch(
-    function() {
-      return watchFn(scope);
-
-    },
-    function(newValue, oldValue, scope) {
-      if (_.isFunction(listenerFn)) {
-        listenerFn.apply(this, arguments);
-      }
-      unwatch();
-    },
-    valueEq
-  );
-  return unwatch;
-}
-
 function markConstantExpressions(ast) {
   var allConstants;
   switch (ast.type) {
@@ -929,18 +912,22 @@ function Parser(lexer) {
   this.astCompiler = new ASTCompiler(this.ast);
 }
 
-Parser.prototype.parse = function(text) {
-  return this.astCompiler.compile(text);
-};
-
 function parse(expr) {
   switch (typeof expr) {
     case 'string':
       var lexer = new Lexer();
       var parser = new Parser(lexer);
+      var oneTime = false;
+      if (expr.charAt(0) === ":" && expr.charAt(1) === ":") {
+        oneTime = true;
+        expr = expr.substring(2);
+      }
       var parseFn = parser.parse(expr);
       if (parseFn.constant) {
         parseFn.$$watchDelegate = constantWatchDelegate;
+      } else if (oneTime) {
+        parseFn.$$watchDelegate = parseFn.literal ? oneTimeLiteralWatchDelegate :
+                                                    oneTimeWatchDelegate;
       }
       return parseFn;
     case 'function':
@@ -948,6 +935,71 @@ function parse(expr) {
     default:
       return _.noop;
   }
+}
+
+Parser.prototype.parse = function(text) {
+  return this.astCompiler.compile(text);
+};
+
+function constantWatchDelegate(scope, listenerFn, valueEq, watchFn) {
+  var unwatch = scope.$watch(
+    function() {
+      return watchFn(scope);
+    },
+    function(newValue, oldValue, scope) {
+      if (_.isFunction(listenerFn)) {
+        listenerFn.apply(this, arguments);
+      }
+      unwatch();
+    },
+    valueEq
+  );
+  return unwatch;
+}
+
+function oneTimeWatchDelegate(scope, listenerFn, valueEq, watchFn) {
+  var lastValue;
+  var unwatch = scope.$watch(
+    function() {
+      return watchFn(scope);
+    }, function(newValue, oldValue, scope) {
+      lastValue = newValue;
+      if (_.isFunction(listenerFn)) {
+        listenerFn.apply(this, arguments);
+      }
+      if (!_.isUndefined(newValue)) {
+        scope.$$postDigest(function() {
+          if (!_.isUndefined(lastValue)) {
+            unwatch();
+          }
+        });
+      }
+    }, valueEq
+  );
+  return unwatch;
+}
+
+function oneTimeLiteralWatchDelegate(scope, listenerFn, valueEq, watchFn) {
+  function isAllDefined(val) {
+    return !_.some(val, _.isUndefined);
+  }
+  var unwatch = scope.$watch(
+    function() {
+      return watchFn(scope);
+    }, function(newValue, oldValue, scope) {
+      if (_.isFunction(listenerFn)) {
+        listenerFn.apply(this, arguments);
+      }
+      if (isAllDefined(newValue)) {
+        scope.$$postDigest(function() {
+          if (isAllDefined(newValue)) {
+            unwatch();
+          }
+        });
+      }
+    }, valueEq
+  );
+  return unwatch;
 }
 
 module.exports = parse;
