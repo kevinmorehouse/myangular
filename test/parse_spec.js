@@ -750,7 +750,7 @@ describe('parse', function() {
     expect(parse('[1, [2, [a]]]').constant).toBe(false);
   });
 
-  it('marks objects constant when elements are constant', function() {
+  it('marks objects constant when values are constant', function() {
     expect(parse('{a: 1, b: 2}').constant).toBe(true);
     expect(parse('{a: 1, b: {c: 3}}').constant).toBe(true);
     expect(parse('{a: 1, b: something}').constant).toBe(false);
@@ -779,7 +779,7 @@ describe('parse', function() {
 
   it('marks filters constant if arguments are', function() {
     register('aFilter', function() {
-      return _.identity();
+      return _.identity;
     });
     expect(parse('[1, 2, 3] | aFilter').constant).toBe(true);
     expect(parse('[1, 2, a] | aFilter').constant).toBe(false);
@@ -823,4 +823,21 @@ describe('parse', function() {
     expect(parse('a ? b : c').constant).toBe(false);
   });
 
+  it('allows calling assign on identifier expressions', function() {
+    var fn = parse('anAttribute');
+    expect(fn.assign).toBeDefined();
+
+    var scope = {};
+    fn.assign(scope, 42);
+    expect(scope.anAttribute).toBe(42);
+  });
+
+  it('allows calling assign on member expressions', function() {
+    var fn = parse('anObject.anAttribute');
+    expect(fn.assign).toBeDefined();
+
+    var scope = {};
+    fn.assign(scope, 42);
+    expect(scope.anObject).toEqual({anAttribute: 42});
+  });
 });
