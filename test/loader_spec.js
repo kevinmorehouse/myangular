@@ -33,3 +33,28 @@ describe('setupModuleLoader', function() {
   });
 
 });
+
+describe('modules', function() {
+
+  beforeEach(function() {
+    setupModuleLoader(window);
+  });
+
+  it('allows registering a module', function() {
+    var myModule = window.angular.module('myModule', []);
+    expect(myModule).toBeDefined();
+    expect(myModule.name).toEqual('myModule');
+  });
+
+  it('replaces a module when registered with same name again', function() {
+    var myModule = window.angular.module('myModule', []);
+    var myNewModule = window.angular.module('myModule', []);
+    expect(myNewModule).not.toBe(myModule);
+  });
+
+  it('attaches the requires array to the registered module', function() {
+    var myModule = window.angular.module('myModule', ['myOtherModule']);
+    expect(myModule.requires).toEqual(['myOtherModule']);
+  });
+
+});
