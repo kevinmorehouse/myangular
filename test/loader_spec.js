@@ -32,29 +32,49 @@ describe('setupModuleLoader', function() {
     expect(window.angular.module).toBe(module);
   });
 
-});
+  describe('modules', function() {
 
-describe('modules', function() {
+    beforeEach(function() {
+      setupModuleLoader(window);
+    });
+  
+    it('allows registering a module', function() {
+      var myModule = window.angular.module('myModule', []);
+      expect(myModule).toBeDefined();
+      expect(myModule.name).toEqual('myModule');
+    });
+  
+    it('replaces a module when registered with same name again', function() {
+      var myModule = window.angular.module('myModule', []);
+      var myNewModule = window.angular.module('myModule', []);
+      expect(myNewModule).not.toBe(myModule);
+    });
+  
+    it('attaches the requires array to the registered module', function() {
+      var myModule = window.angular.module('myModule', ['myOtherModule']);
+      expect(myModule.requires).toEqual(['myOtherModule']);
+    });
+  
+    it('allows getting a module', function() {
+      var myModule = window.angular.module('myModule', []);
+      var gotModule = window.angular.module('myModule');
+  
+      expect(gotModule).toBeDefined();
+      expect(gotModule).toBe(myModule);
+    });
+  
+    it('throws when trying to get a nonexistent module', function() {
+      expect(function() {
+        window.angular.module('myModule');
+      }).toThrow();
+    });
 
-  beforeEach(function() {
-    setupModuleLoader(window);
-  });
+    it('does not allow a module to be called hasOwnProperty', function() {
+      expect(function() {
+        window.angular.module('hasOwnProperty', []);
+      }).toThrow();
+    });
 
-  it('allows registering a module', function() {
-    var myModule = window.angular.module('myModule', []);
-    expect(myModule).toBeDefined();
-    expect(myModule.name).toEqual('myModule');
-  });
-
-  it('replaces a module when registered with same name again', function() {
-    var myModule = window.angular.module('myModule', []);
-    var myNewModule = window.angular.module('myModule', []);
-    expect(myNewModule).not.toBe(myModule);
-  });
-
-  it('attaches the requires array to the registered module', function() {
-    var myModule = window.angular.module('myModule', ['myOtherModule']);
-    expect(myModule.requires).toEqual(['myOtherModule']);
   });
 
 });
