@@ -29,8 +29,7 @@ function createInjector(modulesToLoad, strictDi) {
       return [];
     } else {
       if (strictDi) {
-        throw 'fn is using explicit annotation and ' +
-              'cannot be invoked in strict mode';
+        throw 'fn is not using explicit annotation and cannot be invoked in strict mode';
       }
       var source = fn.toString().replace(STRIP_COMMENTS, '');
       var argDeclaration = source.match(FN_ARGS);
@@ -44,8 +43,8 @@ function createInjector(modulesToLoad, strictDi) {
     var args = _.map(annotate(fn), function(token) {
       if (_.isString(token)) {
         return locals && locals.hasOwnProperty(token) ?
-        locals[token] :
-        cache[token];
+          locals[token] :
+          cache[token];
       } else {
         throw 'Incorrect injection token! Expected a string, got '+token;
       }
