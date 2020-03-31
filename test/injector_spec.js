@@ -184,7 +184,7 @@ describe('injector', function() {
     it('strips several comments from argument lists when parsing', function() {
       var injector = createInjector([]);
 
-      var fn = function(a, /*b,*/ c /*, d */) { };
+      var fn = function(a, /*b,*/ c/*, d*/) { };
 
       expect(injector.annotate(fn)).toEqual(['a', 'c']);
     });
@@ -428,6 +428,7 @@ describe('injector', function() {
       aProvider.setValue(2);
       this.$get = function() { };
     });
+
 
     var injector = createInjector(['myModule']);
 

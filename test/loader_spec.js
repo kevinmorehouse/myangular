@@ -74,7 +74,6 @@ describe('setupModuleLoader', function() {
         window.angular.module('hasOwnProperty', []);
       }).toThrow();
     });
-
   });
 
 });

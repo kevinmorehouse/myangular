@@ -7,10 +7,11 @@ var FN_ARG = /^\s*(_?)(\S+?)\1\s*$/;
 var STRIP_COMMENTS = /(\/\/.*$)|(\/\*.*?\*\/)/mg;
 var INSTANTIATING = { };
 
+
 function createInjector(modulesToLoad, strictDi) {
   var providerCache = {};
   var providerInjector = createInternalInjector(providerCache, function() {
-    throw 'Unknown provider: ' +path.join(' <- ');
+    throw 'Unknown provider: '+path.join(' <- ');
   });
   var instanceCache = {};
   var instanceInjector = createInternalInjector(instanceCache, function(name) {
@@ -19,7 +20,6 @@ function createInjector(modulesToLoad, strictDi) {
   });
   var loadedModules = {};
   var path = [];
-
   strictDi = (strictDi === true);
 
   var $provide = {
@@ -63,7 +63,7 @@ function createInjector(modulesToLoad, strictDi) {
       if (cache.hasOwnProperty(name)) {
         if (cache[name] === INSTANTIATING) {
           throw new Error('Circular dependency found: ' +
-          name + ' <- ' + path.join(' <- '));
+            name + ' <- ' + path.join(' <- '));
         }
         return cache[name];
       } else {
@@ -105,8 +105,7 @@ function createInjector(modulesToLoad, strictDi) {
 
     return {
       has: function(name) {
-        return cache.hasOwnProperty(name) ||
-          providerCache.hasOwnProperty(name + 'Provider');
+        return cache.hasOwnProperty(name) || providerCache.hasOwnProperty(name + 'Provider');
       },
       get: getService,
       annotate: annotate,
@@ -114,7 +113,6 @@ function createInjector(modulesToLoad, strictDi) {
       instantiate: instantiate
     };
   }
-
 
   _.forEach(modulesToLoad, function loadModule(moduleName) {
     if (!loadedModules.hasOwnProperty(moduleName)) {

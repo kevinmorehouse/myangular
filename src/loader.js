@@ -11,6 +11,7 @@ function setupModuleLoader(window) {
     if (name === 'hasOwnProperty') {
       throw 'hasOwnProperty is not a valid module name';
     }
+
     var invokeQueue = [];
 
     var invokeLater = function(method, arrayMethod) {
@@ -27,6 +28,7 @@ function setupModuleLoader(window) {
       provider: invokeLater('provider'),
       _invokeQueue: invokeQueue
     };
+
     modules[name] = moduleInstance;
     return moduleInstance;
   };
