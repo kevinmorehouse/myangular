@@ -787,4 +787,27 @@ describe('injector', function() {
     expect(injector.get('a')).toBeUndefined();
   });
 
+  it('allows registering a service', function() {
+    var module = window.angular.module('myModule', []);
+
+    module.service('aService', function MyService() {
+      this.getValue = function() { return 42; };
+    });
+
+    var injector = createInjector(['myModule']);
+
+    expect(injector.get('aService').getValue()).toBe(42);
+  });
+
+  it('only instantiates services once', function() {
+    var module = window.angular.module('myModule', []);
+
+    module.service('aService', function MyService() {
+    });
+
+    var injector = createInjector(['myModule']);
+
+    expect(injector.get('aService')).toBe(injector.get('aService'));
+  });
+
 });
