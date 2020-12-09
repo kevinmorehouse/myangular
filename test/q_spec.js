@@ -107,4 +107,16 @@ describe('$q', function() {
 
   });
 
+  it('resolves a listener added after resolution', function() {
+    var d = $q.defer();
+    d.resolve(42);
+    $rootScope.$apply();
+
+    var promiseSpy = jasmine.createSpy();
+    d.promise.then(promiseSpy);
+    $rootScope.$apply();
+
+    expect(promiseSpy).toHaveBeenCalledWith(42);
+  });
+
 });
